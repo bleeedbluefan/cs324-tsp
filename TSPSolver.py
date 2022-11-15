@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# Hi there!
 
 from which_pyqt import PYQT_VER
 if PYQT_VER == 'PYQT5':
