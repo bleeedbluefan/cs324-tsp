@@ -102,7 +102,43 @@ class TSPSolver:
 
 
 	''' <summary>
-		This is the entry point for the algorithm you'll write for your group project.
+		2-OPT ALGORITHM
+		Builds off of Greedy algorithm
+		
+		Details to think about:
+			* how do we avoid checking paths we've already seen?
+				- index values on linked lists, only check values 'ahead' of itself
+				(this might work well with the city limit, easy way to only check certain values ahead of itself)
+			* do we want to evaluate each path and then take the best one, or swap immediately when a better solution is found?
+			* Storage: Singly Linked List, maybe a list for indexes?
+			
+		Variables:
+		For class:
+			* Final Best Tour
+			* Best Solution cost
+			* total solutions found (increases when swapped)
+			* Time elapsed
+			
+		For us:
+			* Current Tour
+			* total swaps made
+			* (boolean) improved
+			* k value (how many cities away do we want to check?)
+		
+		[Limit: 10 cities away?]
+		NEEDED FUNCTIONS:
+		* are two paths swappable?
+			- can x1 hook to y2 and can x2 hook to y1?
+			- does a reverse path exist? Use function below
+		* can the path be reversed? - Pass in k value for cities away
+			- if the path cannot reverse, we can exit
+			- we only want to check the smaller path (nodes between the new path)
+		* what is the cost of the new path?
+			- if the cost is ever more, we can exit
+			(Sub function for this?)
+			- compare the swapped fragment with the original fragment, not whole path
+		* swap two paths
+		
 		</summary>
 		<returns>results dictionary for GUI that contains three ints: cost of best solution, 
 		time spent to find best solution, total number of solutions found during search, the 
@@ -111,6 +147,19 @@ class TSPSolver:
 	'''
 		
 	def fancy( self,time_allowance=60.0 ):
+		'''
+
+		while improved:
+				for range of path:
+					for range of k:
+						evaluate 2 opt swap (see functions above)
+							* does a path exist to this city?
+							* does the other city have a path to complete the tour?
+							* can the path between the two reversed?
+							* is the cost better?
+							* swap or don't swap
+
+	'''
 		pass
 		
 
