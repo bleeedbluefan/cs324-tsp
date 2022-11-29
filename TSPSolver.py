@@ -130,6 +130,7 @@ class TSPSolver:
         # ----------- NEW CODE ADDED BY JUSTIN MCKEEN (Nearest Neighbor)------------
 
         # Gathering initial info, starting time, and picking starting column (city)
+        # >> TIME IS O(n) -- gathering cities takes n time
         cities = self._scenario.getCities()
         num_cities = len(cities)
         start_time = time.time()
@@ -137,17 +138,20 @@ class TSPSolver:
         original_column = starting_column
 
         # Creates the Matrix
+        # >>> MEMORY IS O(n^2) -- creates a matrix nXn size
         cost_matrix = [[0 for i in range(num_cities)] for j in range(num_cities)]
 
         # Starts the path
         path = [starting_column]
 
         # Populates the cost matrix with proper values
+        # >>> TIME IS O(n^2) -- populates matrix that is nXn size
         for i in range(num_cities):
             for j in range(num_cities):
                 cost_matrix[i][j] = cities[i].costTo(cities[j])
 
         # Traverse through each city to find NN
+        # >>> TIME IS O(n^2) -- Each iteration check the city you're at & finds best next (might be O(Log(n^2))
         for i in range(num_cities):
             min_value = np.inf
             current_index = -1 # incase no path exists, set to -1 for down the road
@@ -166,6 +170,7 @@ class TSPSolver:
             starting_column = current_index
 
             # make any other path infinity to prevent going down it
+
             for j in range(num_cities):
                 cost_matrix[j][starting_column] = np.inf
 
@@ -177,9 +182,10 @@ class TSPSolver:
         results = {}
 
         # Traversing through NN
+        # >>> TIME IS O(n) -- Runs through the path and appends city path n times
         for i in range(len(path) - 1):
 
-            # If any path is -1? This means NO PATH EXISTS
+            # If any path is -1? This means no path exists
             if path[i] == -1:
                 results['cost'] = np.inf
                 results['time'] = time.time() - start_time
@@ -196,6 +202,7 @@ class TSPSolver:
 
 
         # Store path & All the results
+        # >>> TIME IS O(1) -- Saves route and stores results in constant time
         route = TSPSolution(city_path)
         end_time = time.time()
         results['cost'] = route.cost
