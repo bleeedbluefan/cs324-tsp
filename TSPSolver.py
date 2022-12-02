@@ -18,51 +18,65 @@ import itertools
 
 
 # ----------Linked List Class ADDED BY JUSTIN-----------
-# class Node:
-#     def __init__(self, city_info):
-#         self.info = city_info
-#         self.next = None
-#
-#     def return_info(self):
-#         return self.info
-#
-#
-# class CLinkedList:
-#     def __init__(self):
-#         self.head = None
-#         self.tail = None
-#         self.size = 0
-#
-#     def add_city(self, city_info):
-#
-#         # Make a new node with city_info, attach the new node's next to the head (making it a circle LL)
-#         new_node = Node(city_info)
-#
-#         # This will add the node to tail of LL
-#         if self.head is None:
-#             self.head = new_node
-#             self.tail = new_node
-#         else:
-#             self.tail.next = new_node
-#             self.tail = new_node
-#             self.tail.next = self.head
-#         self.size += 1
-#
-#     def get_head(self) -> Node:
-#             return self.head
-#
-#     def return_cities(self):
-#         temp = self.head
-#         if self.head is not None:
-#             while True:
-#                 print("%d" % temp.info),
-#                 temp = temp.next
-#                 if temp == self.head:
-#                     break
-#     def get_size(self):
-#         return self.size
-# -------------------------------------------------------
+class Node:
+    def __init__(self, city_info):
+        self.info = city_info
+        self.next = None
 
+    def return_info(self):
+        return self.info
+
+
+class CLinkedList:
+    def __init__(self):
+        self.head = None
+        self.tail = None
+        self.size = 0
+
+    # Juliana: Adds an entire list of cities to the linked list. Mainly used for testing in Greedy
+    def add_cities(self, cities):
+        for city in cities:
+            self.add_city(city)
+
+    def add_city(self, city_info):
+
+        # Make a new node with city_info, attach the new node's next to the head (making it a circle LL)
+        new_node = Node(city_info)
+
+        # This will add the node to tail of LL
+        if self.head is None:
+            self.head = new_node
+            self.tail = new_node
+        else:
+            self.tail.next = new_node
+            self.tail = new_node
+            self.tail.next = self.head
+        self.size += 1
+
+    def get_head(self) -> Node:
+            return self.head
+
+    def return_cities(self):
+        temp = self.head
+        if self.head is not None:
+            print(self.head.info)    # If head exists, print it and move to the next node
+            temp = temp.next
+            # While temp is not None or not head, then print its info
+            while temp is not self.head and temp is not None:
+                print(temp.info)
+                temp = temp.next
+
+    # Juliana: Returns an array version of the linked list. Might be useful for converting to BSSF
+    def return_cities_as_array(self):
+        arr_of_cities = [self.head.info]
+        temp = self.head.next
+        while temp is not self.head:    # For every unique node in the list, add its info to the array
+            arr_of_cities.append(temp.info)
+            temp = temp.next
+        return arr_of_cities    # Return array for of list
+
+    def get_size(self):
+        return self.size
 
 class TSPSolver:
     def __init__(self, gui_view):
@@ -212,6 +226,12 @@ class TSPSolver:
         results['max'] = None
         results['total'] = None
         results['pruned'] = None
+
+        # ---- CODE BY JULIANA: TESTING LINKED LIST ----
+        linkedList = CLinkedList()
+        linkedList.add_cities(city_path)
+        linkedList.return_cities()
+        print(linkedList.return_cities_as_array())
         return results
     pass
 
