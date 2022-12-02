@@ -294,7 +294,7 @@ class TSPSolver:
         algorithm</returns> 
     '''
 
-    def fancy(self, time_allowance=60.0):
+    def fancy(self, linked_list, time_allowance=60.0):
         '''
 
         while improved:
@@ -308,4 +308,56 @@ class TSPSolver:
                             * swap or don't swap
 
     '''
+        k = 10
+        improved = true
+        cost_matrix = np.ndarray(shape=(linked_list.size, linked_list.size))
+        # change this to be implemented correctly. Stores the value of the start index so the program knows when to stop
+        start_index = linked_list.head.index
+        while improved:
+            improved = false
+            # we may need to store the current size of linked list as a class field
+            # also need a refernce to the first element of the list
+            curr_city = linked_list.head
+            for i in range(linked_list.size()):
+                eval_city = curr_city.next
+                # may have to look into this, we may want it to run 1 less times than k since we don't want to evaluate the element next to it
+                for j in range(k):
+                    # breaks out if we're back to the start
+                    eval_city = eval_city.next
+                    if eval_city.index == start_index:
+                        break
+
+                    # code for checking if this is a potential path:
+                    curr_connection = curr_city.next.index
+                    eval_connection = eval_city.next.index
+                    cost_improved = false
+                    if cost_matrix[curr_city.index, eval_city.index] != np.inf and cost_matrix[curr_connection, eval_connection] != np.inf:
+                        print("Evaluating reverse path")
+                        # IMPLEMENT REVERSE PATH CHECKER AND COST EVAL HERE!
+                        # THE REVERSE PATH MUST BE ABLE TO CONNECT THE EVAL_CITY AND THE CURR_CONNECTION
+                    if cost_improved:
+                        improved = true
+                        # need to get the actual connection node, not just index
+                        swap(curr_connection, eval_city.index)
+                    print('do something')
+                # set linked list node to the next one in list
+                curr_city = curr_city.next
+                # breaks the loop if we're back to the start
+                if curr_city.index == start_index:
+                    break
+
+
+
+
         pass
+
+    def swap(self, curr_connection_node, goal_index):
+        curr_node = curr_connection_node
+        next_node = curr_connection_node.next
+        while curr_node.index != goal_index:
+            previous_node = curr_node
+            curr_node = next_node
+            next_node = curr_node.next
+
+            curr_node.next = previous_node
+
