@@ -352,7 +352,8 @@ class TSPSolver:
             ''' Terminate and return None if the city is unreachable '''
             if self.cost_matrix[self.last_city_idx][idx] == np.inf: return
             ''' Create a deepcopy of the state to modify '''
-            next_state = np.deepcopy(self)
+            from copy import deepcopy
+            next_state = deepcopy(self)
             ''' Update the new state to the next city and return it '''
             next_state.update_route(idx)
             return next_state
@@ -435,6 +436,9 @@ class TSPSolver:
                             * swap or don't swap
 
         '''
+
+        start_time = time.time()
+
         init_path = self.greedy(time_allowance)
         if init_path['soln'] is None or init_path['soln'].cost == np.inf:
             init_path = self.defaultRandomTour(time_allowance)
@@ -445,48 +449,55 @@ class TSPSolver:
         og_cost = init_path['cost']
         results = {}
         ncities = len(cities)
-        num_swaps = 0
+        num_swaps, found_swaps = 0, 0
         cost_matrix = np.array([[np.inf if i == j else cities[i].costTo(cities[j]) for j in range(ncities)] for i in range(ncities)])
 
-        k = 5
+        k = 50
         if k >= ncities:
             k = ncities - 1
-        start_time = time.time()
 
         improved = True
         # change this to be implemented correctly. Stores the value of the start index so the program knows when to stop
-        while improved and time.time()-start_time < time_allowance:
+        # O(n^2k^2) space:O(k) - swaps
+        for _ in range(linked_list.size):
+            if time.time()-start_time >= time_allowance: break
             improved = False
             # we may need to store the current size of linked list as a class field
             # also need a reference to the first element of the list
             curr_city = linked_list.head
             for i in range(linked_list.size):
                 eval_city = curr_city.next
-                # if time.time()-start_time < time_allowance:
-                #     break
+                if time.time()-start_time >= time_allowance: break
                 # may have to look into this, we may want it to run 1 less times than k since we don't want to evaluate the element next to it
+                swaps = {}
                 for j in range(k - 1):
                     # breaks out if we're back to the start
                     eval_city = eval_city.next
                     # code for checking if this is a potential path:
-                    swapped = self.evaluate_swap(curr_city, eval_city, linked_list, cost_matrix)
-                    if swapped:
+                    s, e, cost = self.evaluate_swap(curr_city, eval_city, linked_list, cost_matrix)
+                    if cost < 0:
+                        swaps[cost] = {'s':s, 'e':e}
+                if len(swaps) > 0:
+                    best = min(swaps.keys())
+                    found_swaps += len(swaps)
+                    if best < 0:
+                        linked_list.cost += best
+                        self.swap(swaps[best]['s'], swaps[best]['e'])
                         num_swaps += 1
-                    improved = swapped or improved
+                        improved = True
                 # set linked list node to the next one in list
                 curr_city = curr_city.next
-
-        print(linked_list.return_cities)
+            if not improved: break
         bssf = linked_list.return_solution(cities)
         end_time = time.time()
         '''Return values of results'''
         results['cost'] = bssf.cost if bssf is not None else np.inf
         results['time'] = end_time - start_time
-        results['count'] = num_swaps
+        results['count'] = found_swaps
         results['soln'] = bssf
         results['max'] = og_cost
         results['total'] = linked_list.cost
-        results['pruned'] = num_swaps
+        results['pruned'] = f"Took: {num_swaps}/{found_swaps}; {bssf.cost/og_cost:0.5f}"
         return results
 
     def evaluate_swap(self, entry_node, last_swapped, linked_list, cost_matrix):
@@ -497,7 +508,7 @@ class TSPSolver:
         exit_node = last_swapped.next
         reversed_backward_cost = get_cost(entry_node, last_swapped) + get_cost(first_swapped, exit_node)
         if reversed_backward_cost == np.inf:
-            return False
+            return entry_node, last_swapped, np.inf
         partial_forward_cost = get_cost(entry_node, first_swapped) + get_cost(last_swapped, exit_node)
         search_node = first_swapped
         while search_node.index != last_swapped.index:
@@ -505,12 +516,7 @@ class TSPSolver:
             partial_forward_cost += get_cost(search_node, search_node.next)
             if reversed_backward_cost == np.inf: break
             search_node = search_node.next
-        if partial_forward_cost < reversed_backward_cost:
-            return False
-        else:
-            linked_list.cost += reversed_backward_cost - partial_forward_cost
-            self.swap(entry_node, last_swapped)
-            return True
+        return entry_node, last_swapped, (reversed_backward_cost - partial_forward_cost)
 
     def swap(self, start_node, goal_node):
         curr_node = start_node.next
