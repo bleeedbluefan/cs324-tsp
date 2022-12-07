@@ -426,21 +426,21 @@ class Proj5GUI( QMainWindow ):
 		h.addStretch(1)
 		h.addWidget( QLabel( 'max queue size:' ) )
 		h.addWidget( self.maxQSize )
-		self.maxQSize.setEnabled(False)
+		self.maxQSize.setEnabled(True)
 		vbox.addLayout(h)
 
 		h = QHBoxLayout()
 		h.addStretch(1)
 		h.addWidget( QLabel( 'total states:' ) )
 		h.addWidget( self.totalStates )
-		self.totalStates.setEnabled(False)
+		self.totalStates.setEnabled(True)
 		vbox.addLayout(h)
 
 		h = QHBoxLayout()
 		h.addStretch(1)
 		h.addWidget( QLabel( 'pruned states:' ) )
 		h.addWidget( self.prunedStates )
-		self.prunedStates.setEnabled(False)
+		self.prunedStates.setEnabled(True)
 		vbox.addLayout(h)
 
 
@@ -473,9 +473,9 @@ class Proj5GUI( QMainWindow ):
 		h.addWidget( self.tourCost )
 		h.addWidget( QLabel( 'Solved in:' ) )
 		h.addWidget( self.solvedIn )
-		self.numSolutions.setEnabled(False)
-		self.tourCost.setEnabled(False)
-		self.solvedIn.setEnabled(False)
+		self.numSolutions.setEnabled(True)
+		self.tourCost.setEnabled(True)
+		self.solvedIn.setEnabled(True)
 		h.addStretch(1)
 		vbox.addLayout(h)
 
