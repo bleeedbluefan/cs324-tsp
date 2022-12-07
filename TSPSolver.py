@@ -83,7 +83,8 @@ class TSPSolver:
 
     def setupWithScenario(self, scenario):
         self._scenario = scenario
-#region old
+
+    # region old
     ''' <summary>
         This is the entry point for the default solver
         which just finds a valid random tour.  Note this could be used to find your
@@ -147,7 +148,8 @@ class TSPSolver:
         results, cities = {}, self._scenario.getCities()
         '''Initialize some of the data we need for results'''
         ncities, count, bssf = len(cities), 0, None
-        cost_matrix = np.array([[np.inf if i == j else cities[i].costTo(cities[j]) for j in range(ncities)] for i in range(ncities)])
+        cost_matrix = np.array(
+            [[np.inf if i == j else cities[i].costTo(cities[j]) for j in range(ncities)] for i in range(ncities)])
         start_time = time.time()
         ''' Random Permutation for the possible starting indexes;
 			 this allows multiple NN searches to be run with no overlaps
@@ -203,175 +205,164 @@ class TSPSolver:
         max queue size, total number of states created, and number of pruned states.</returns> 
     '''
 
-    class State:
-        """
-		A class to hold each sub-state of the Branch and Bound Algorithm.
-		Store a cost_matrix of costs, a route, a list of remaining cities, and the current cost.
-		The cities themselves are not stored within the State class, just their indexes;
-		this was to hopefully make it faster.
-
-		Complexity:
-			Init Time: O(n^2)
-			Copy Time: O(n^2)
-			Update Time: O(n^2)
-			Space: O(n^2)
-		"""
-
-        def __init__(self, init_cities):
-            """
-			Creates the initial State of the Branch and Bound Algorithm and reduces it to find the base cost.
-			Complexity:
-				Time: O(n^2)
-				Space: O(n^2)
-			:param init_cities: List of cities to form cost_matrix from
-			"""
-            self.num_cities = len(init_cities)
-            ''' Create a new cost_matrix, each cell is filled with cost to move from city[row] -> city[column]
-				The diagonals are marked as infinity so cities do not return to themselves
-					Time: O(n^2) Space: O(n^2) '''
-            self.cost_matrix = \
-                np.array([[np.inf if i == j else init_cities[i].costTo(init_cities[j]) \
-                           for j in range(self.num_cities)] for i in range(self.num_cities)])
-            ''' Initialize other default values '''
-            self.last_city_idx = 0
-            self.route = [0]
-            ''' Create list of unvisited cites indexes with all but 0 '''
-            self.unvisited_cities = [i for i in range(1, self.num_cities)]
-            ''' Reduce the cost matrix to zero out minimum values '''
-            self.cost = self.reduce_cost_matrix()
-
-        def update_route(self, idx):
-            """
-			This function is used to update the route by updating the route of the State.
-			This involves re-reducing the matrix, and adding it to it's cost
-			Complexity:
-				Time: O(n^2)
-				Space: O(n)
-
-			:param idx: Index of city to move to; matches the corresponding row/col index of the cost matrix
-			"""
-            ''' Add the cost to travel to the city to '''
-            self.cost += self.cost_matrix[self.last_city_idx][idx]
-            ''' Remove the return edge from the matrix '''
-            self.cost_matrix[idx][self.last_city_idx] = np.inf
-            ''' Remove the column that was visited '''
-            self.cost_matrix[:, idx] = np.inf
-            ''' Remove the row that was visited '''
-            self.cost_matrix[self.last_city_idx] = np.inf
-            ''' update the last visited city '''
-            self.last_city_idx = idx
-            ''' Add the idx to the route '''
-            self.route.append(idx)
-            self.unvisited_cities.remove(idx)
-            ''' Reduce the cost matrix back to zeroed values
-					 Time: O(n^2) Space: O(n^2) '''
-            self.cost += self.reduce_cost_matrix()
-
-        def reduce_cost_matrix(self):
-            """
-			Reduces all the rows in the cost matrix by the minimum value, then reduces the columns.
-			This reduction skips rows that have a 0 or infinity as their minimum
-			Complexity:
-				Time: O(n^2)
-				Space: O(n)
-
-			:return: The base cost used to travel to any available city in the matrx
-			"""
-
-            def reduction(axis):
-                """
-				Small helper function, reduces every row/col in the matrix by the minimum value of the row.
-				Complexity:
-					Time: O(n^2)
-					Space: O(n)
-
-				:param axis: The axis to reduce on, according to numpy's axis system
-				:return: The sum cost removed by the reduction
-				"""
-                ''' Use numpy to find minimum value in all rows/cols 
-						Time: O(n) Space: O(n)'''
-                min_vec = np.amin(self.cost_matrix, axis=axis)
-                reduce_cost = 0
-                ''' Go through every value in the minimum values vector
-						Time: O(n) Space: O(1)'''
-                for i, c in enumerate(min_vec):
-                    if c == 0 or c == np.inf: continue
-                    reduce_cost += c
-                    ''' subtract the minimum value from the row/col '''
-                    if axis == 1:
-                        self.cost_matrix[i] -= c
-                    else:
-                        self.cost_matrix[:, i] -= c
-                ''' return the sum of all minimum values '''
-                return reduce_cost
-
-            ''' Return cost of the row reduction, followed by col reduction '''
-            return reduction(axis=1) + reduction(axis=0)
-
-        def get_next_state(self, idx):
-            """
-			Creates a copy of the state, then moves it to the next city.
-			None is returned if the move is invalid
-			Complexity:
-				Time: O(n^2) # None case is O(1)
-				Space: O(n^2) # None case is O(1)
-
-			:param idx: Index of the city to move the copied state to
-			:return: None if no path is possible, otherwise a new State with an updated cost_matrix and route
-			"""
-            ''' Terminate and return None if the city is unreachable '''
-            if self.cost_matrix[self.last_city_idx][idx] == np.inf: return
-            ''' Create a deepcopy of the state to modify '''
-            from copy import deepcopy
-            next_state = deepcopy(self)
-            ''' Update the new state to the next city and return it '''
-            next_state.update_route(idx)
-            return next_state
-
-        def __lt__(self, other):  # heapq uses < operator to push and pop right one
-            """
-			Built in less than comparison; used to sort the heapq heap.
-			Complexity:
-				Time: O(1)
-				Space: O(1)
-			:param other: The other state to compare against
-			:return: Boolean value of whether the state is less than the other state
-			"""
-            ''' Check if the number of cities left is identical, if it is compare the costs
-				ones with fewer cities to visit are prioritized '''
-            if len(self.unvisited_cities) == len(other.unvisited_cities):
-                return self.cost < other.cost
-            else:
-                return len(self.unvisited_cities) < len(other.unvisited_cities)
-
     def branchAndBound(self, time_allowance=60.0):
-        pass
+        # generate an initial bssf with random tour
+        initial_result = self.defaultRandomTour()
 
-    #endregion
+        cities = self._scenario.getCities()
+        ncities = len(cities)
+        start_time = time.time()
+        bcsf = initial_result['cost']
+        bssf = initial_result['soln']
+        total_solutions = 0
+        max_queue = 0
+        states_created = 1
+        pruned_states = 0
+
+        # generates initial cost matrix
+        # Time Complexity: n^2
+        # Space Complexity: n^2
+        cost_matrix = np.ndarray(shape=(ncities, ncities))
+        for city in cities:
+            for other_city in cities:
+                cost_matrix[city._index, other_city._index] = city.costTo(other_city)
+        cost_matrix, lb = self.reduceCostMatrix(cost_matrix, ncities)
+
+        queue = []
+        route = [cities[0]]
+        heapq.heapify(queue)
+
+        new_city_count = ncities - 1
+        heapq.heappush(queue, (new_city_count, lb, 0, cost_matrix, route))
+
+        # pull elements from queue
+        # while loop itself has a time complexity of n!
+        # Overall time complexity : O(n!n^3)
+        # Overall space complexity : in a theoretical worst case the queue would have an upper bound of
+        # requiring O(n!n^2) space
+        while len(queue) > 0 and time.time() - start_time < time_allowance:
+            if len(queue) > max_queue:
+                max_queue = len(queue)
+
+            element = heapq.heappop(queue)
+            curr_row = element[2]
+            curr_matrix = element[3]
+            curr_lb = element[1]
+            cities_left = element[0]
+            curr_route = element[4]
+
+            if curr_lb > bcsf:
+                pruned_states = pruned_states + 1
+                continue
+
+            if cities_left == 0:
+                if curr_lb < bcsf:
+                    total_solutions = total_solutions + 1
+                    bcsf = curr_lb
+                    bssf = TSPSolution(curr_route)
+                    continue
+            # Time complexity : n
+            for col in range(ncities):
+                if cost_matrix[curr_row, col] != np.inf:
+                    cost = curr_matrix[curr_row, col]
+                    if curr_lb + cost >= bcsf:
+                        continue
+                    # Space complexity : each copy is n^2
+                    new_matrix = np.copy(curr_matrix)
+                    # Time complexity : n
+                    new_matrix = self.takePath(new_matrix, curr_row, col, ncities)
+                    # Time complexity : n^2
+                    new_matrix, reduce_cost = self.reduceCostMatrix(new_matrix, ncities)
+                    newlb = curr_lb + cost + reduce_cost
+                    states_created = states_created + 1
+                    if newlb >= bcsf:
+                        pruned_states = pruned_states + 1
+                    else:
+                        new_route = curr_route.copy()
+                        new_route.append(cities[col])
+                        new_cities_left = cities_left - 1
+                        # Time Complexity : logn
+                        heapq.heappush(queue, (new_cities_left, newlb, col, new_matrix, new_route))
+
+        results = {}
+        end_time = time.time()
+        results['cost'] = bcsf
+        results['time'] = end_time - start_time
+        results['count'] = total_solutions
+        results['soln'] = bssf
+        results['max'] = max_queue
+        results['total'] = states_created
+        results['pruned'] = pruned_states
+        return results
+
+    # Time complexity of function: n
+    def takePath(self, cost_matrix, row, col, ncities):
+        # set row to inf
+        # Time complexity of n
+        for i in range(ncities):
+            cost_matrix[row, i] = np.inf
+        # set col to inf
+        # Time complexity of n
+        for i in range(ncities):
+            cost_matrix[i, col] = np.inf
+        cost_matrix[col, row] = np.inf
+        return cost_matrix
+
+    # Time complexity of function : n^2
+    def reduceCostMatrix(self, cost_matrix, ncities):
+        # reduce rows
+        reduce_cost = 0
+        # Time complexity : n
+        for row in range(ncities):
+            curr_low = np.inf
+            # Time complexity : n
+            for col in range(ncities):
+                if cost_matrix[row, col] < curr_low:
+                    curr_low = cost_matrix[row, col]
+            if curr_low != np.inf and curr_low > 0:
+                # Time complexity : n
+                for col in range(ncities):
+                    if cost_matrix[row, col] != np.inf:
+                        cost_matrix[row, col] = cost_matrix[row, col] - curr_low
+                reduce_cost = reduce_cost + curr_low
+
+        # ensure each column has a zero value
+        # Time complexity : n
+        for col in range(ncities):
+            curr_low = np.inf
+            # Time complexity : n
+            for row in range(ncities):
+                if cost_matrix[row, col] < curr_low:
+                    curr_low = cost_matrix[row, col]
+            if curr_low != np.inf and curr_low > 0:
+                # Time complexity : n
+                for row in range(ncities):
+                    if cost_matrix[row, col] != np.inf:
+                        cost_matrix[row, col] = cost_matrix[row, col] - curr_low
+                reduce_cost = reduce_cost + curr_low
+        return cost_matrix, reduce_cost
+
+    # endregion
     ''' <summary>
         2-OPT ALGORITHM
         Builds off of Greedy algorithm
-
         Details to think about:
             * how do we avoid checking paths we've already seen?
                 - index values on linked lists, only check values 'ahead' of itself
                 (this might work well with the city limit, easy way to only check certain values ahead of itself)
             * do we want to evaluate each path and then take the best one, or swap immediately when a better solution is found?
             * Storage: Singly Linked List, maybe a list for indexes?
-
         Variables:
         For class:
             * Final Best Tour
             * Best Solution cost
             * total solutions found (increases when swapped)
             * Time elapsed
-
         For us:
             * Current Tour
             * total swaps made
             * (boolean) improved
             * k value (how many cities away do we want to check?)
-
         [Limit: 10 cities away?]
         NEEDED FUNCTIONS:
         * are two paths swappable?
@@ -385,7 +376,6 @@ class TSPSolver:
             (Sub function for this?)
             - compare the swapped fragment with the original fragment, not whole path
         * swap two paths
-
         </summary>
         <returns>results dictionary for GUI that contains three ints: cost of best solution, 
         time spent to find best solution, total number of solutions found during search, the 
@@ -404,7 +394,6 @@ class TSPSolver:
                             * can the path between the two reversed?
                             * is the cost better?
                             * swap or don't swap
-
         '''
 
         start_time = time.time()
@@ -414,13 +403,14 @@ class TSPSolver:
             init_path = self.defaultRandomTour(time_allowance)
         cities = self._scenario.getCities()
         # init_path = {'cost': 7230, 'time': 0.0, 'count': 6, 'soln': TSPSolution([cities[i] for i in [4,1,2,0,3]]), 'max': None, 'total': None, 'pruned': None}
-        linked_list = CLinkedList() # [03124] - 5167.5
+        linked_list = CLinkedList()  # [03124] - 5167.5
         linked_list.add_cities(init_path["soln"])
         og_cost = init_path['cost']
         results = {}
         ncities = len(cities)
         num_swaps, found_swaps = 0, 0
-        cost_matrix = np.array([[np.inf if i == j else cities[i].costTo(cities[j]) for j in range(ncities)] for i in range(ncities)])
+        cost_matrix = np.array(
+            [[np.inf if i == j else cities[i].costTo(cities[j]) for j in range(ncities)] for i in range(ncities)])
 
         k = 50
         if k >= ncities:
@@ -430,14 +420,14 @@ class TSPSolver:
         # change this to be implemented correctly. Stores the value of the start index so the program knows when to stop
         # O(n^2k^2) space:O(k) - swaps
         for _ in range(linked_list.size):
-            if time.time()-start_time >= time_allowance: break
+            if time.time() - start_time >= time_allowance: break
             improved = False
             # we may need to store the current size of linked list as a class field
             # also need a reference to the first element of the list
             curr_city = linked_list.head
             for i in range(linked_list.size):
                 eval_city = curr_city.next
-                if time.time()-start_time >= time_allowance: break
+                if time.time() - start_time >= time_allowance: break
                 # may have to look into this, we may want it to run 1 less times than k since we don't want to evaluate the element next to it
                 swaps = {}
                 for j in range(k - 1):
@@ -446,7 +436,7 @@ class TSPSolver:
                     # code for checking if this is a potential path:
                     s, e, cost = self.evaluate_swap(curr_city, eval_city, linked_list, cost_matrix)
                     if cost < 0:
-                        swaps[cost] = {'s':s, 'e':e}
+                        swaps[cost] = {'s': s, 'e': e}
                 if len(swaps) > 0:
                     best = min(swaps.keys())
                     found_swaps += len(swaps)
@@ -467,11 +457,11 @@ class TSPSolver:
         results['soln'] = bssf
         results['max'] = og_cost
         results['total'] = linked_list.cost
-        results['pruned'] = f"Took: {num_swaps}/{found_swaps}; {bssf.cost/og_cost:0.5f}"
+        results['pruned'] = f"Took: {num_swaps}/{found_swaps}; {bssf.cost / og_cost:0.5f}"
         return results
 
     def evaluate_swap(self, entry_node, last_swapped, linked_list, cost_matrix):
-        def get_cost(nodeA, nodeB): # [1,3,0,2,4]
+        def get_cost(nodeA, nodeB):  # [1,3,0,2,4]
             return cost_matrix[nodeA.index, nodeB.index]
 
         first_swapped = entry_node.next
@@ -491,7 +481,7 @@ class TSPSolver:
     def swap(self, start_node, goal_node):
         curr_node = start_node.next
         next_node = curr_node.next
-        first_node = start_node.next    # Current City
+        first_node = start_node.next  # Current City
         exit_node = goal_node.next
         while curr_node.index != goal_node.index:
             previous_node = curr_node
