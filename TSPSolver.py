@@ -155,7 +155,7 @@ class TSPSolver:
 			 this allows multiple NN searches to be run with no overlaps
 				 Time: O(n) Space: O(n)
 			 '''
-        for k in np.random.permutation(ncities):
+        for k in range(ncities):
             '''Terminate if we are taking too long'''
             if time.time() - start_time >= time_allowance: break
             '''Create a list of city indexes to search through'''
